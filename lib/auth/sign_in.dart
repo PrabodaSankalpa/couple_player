@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:couple_player/main.dart';
 import 'package:couple_player/utils/colors.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -12,6 +13,8 @@ class SignIn extends StatefulWidget {
 }
 
 class _SignInState extends State<SignIn> {
+  bool isLoading = false;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -25,7 +28,7 @@ class _SignInState extends State<SignIn> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Image.asset(
-                    'assets/sign_up_cover.png',
+                    'assets/sign_up_cover.webp',
                     height: 200,
                   ),
                   const Text(
@@ -50,7 +53,17 @@ class _SignInState extends State<SignIn> {
                     width: 200,
                     child: ElevatedButton.icon(
                       onPressed: () {
-                        signInWithGoogle();
+                        setState(() {
+                          isLoading = true;
+                        });
+
+                        signInWithGoogle().then((_) {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => const MyApp()),
+                          );
+                        });
                       },
                       icon: const Icon(
                         Icons.login_rounded,
@@ -66,6 +79,15 @@ class _SignInState extends State<SignIn> {
                       ),
                     ),
                   ),
+                  const SizedBox(
+                    height: 25,
+                  ),
+                  //Loader
+                  isLoading
+                      ? const CircularProgressIndicator(
+                          color: Colors.white,
+                        )
+                      : Container(),
                 ],
               ),
             ),

@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:clipboard/clipboard.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:couple_player/screens/player_view.dart';
 import 'package:couple_player/utils/colors.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -16,6 +19,7 @@ class JoinPartner extends StatefulWidget {
 class _JoinPartnerState extends State<JoinPartner> {
   TextEditingController _keyController = TextEditingController();
   TextEditingController _addKeyController = TextEditingController();
+
   bool isLoading = false;
 
   @override
@@ -304,18 +308,27 @@ class _JoinPartnerState extends State<JoinPartner> {
                                   try {
                                     await connectWithPartner(
                                             _addKeyController.text)
-                                        .then((value) => {
-                                              Fluttertoast.showToast(
-                                                msg: "Done",
-                                                toastLength: Toast.LENGTH_LONG,
-                                                gravity: ToastGravity.BOTTOM,
-                                                timeInSecForIosWeb: 1,
-                                                textColor: Colors.white,
-                                                backgroundColor: Colors.green,
-                                                fontSize: 16.0,
-                                              ),
-                                              _addKeyController.clear(),
-                                            });
+                                        .then(
+                                      (value) => {
+                                        Fluttertoast.showToast(
+                                          msg: "Connected with Partner!",
+                                          toastLength: Toast.LENGTH_LONG,
+                                          gravity: ToastGravity.BOTTOM,
+                                          timeInSecForIosWeb: 1,
+                                          textColor: Colors.white,
+                                          backgroundColor: primaryColor,
+                                          fontSize: 16.0,
+                                        ),
+                                        _addKeyController.clear(),
+                                        Navigator.pushReplacement(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                const PlayerView(),
+                                          ),
+                                        ),
+                                      },
+                                    );
                                   } catch (e) {
                                     Fluttertoast.showToast(
                                       msg: "Oops! Something went wrong!",
