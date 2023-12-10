@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:couple_player/utils/colors.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -86,5 +87,25 @@ class _SignInState extends State<SignIn> {
         await FirebaseAuth.instance.signInWithCredential(credential);
 
     print(userCredential.user?.email);
+
+    // Check if the user document exists in the Firestore collection
+    DocumentSnapshot<Map<String, dynamic>> userDoc = await FirebaseFirestore
+        .instance
+        .collection('users')
+        .doc(userCredential.user?.uid)
+        .get();
+
+    if (!userDoc.exists) {
+      // If the document does not exist, create it with initial data
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userCredential.user?.uid)
+          .set({
+        'displayName': userCredential.user?.displayName
+            ?.split(" ")[0], // Save the first part of displayName
+        'partnerId': null,
+        'playerInfoId': null,
+      });
+    }
   }
 }

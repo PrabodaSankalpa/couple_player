@@ -1,3 +1,4 @@
+import 'package:couple_player/auth/join_partner.dart';
 import 'package:couple_player/auth/sign_in.dart';
 import 'package:couple_player/utils/colors.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -28,7 +29,7 @@ class MyApp extends StatelessWidget {
     return const MaterialApp(
       debugShowCheckedModeBanner: false,
       title: "Couple App",
-      home: SignIn(),
+      home: JoinPartner(),
     );
   }
 }
