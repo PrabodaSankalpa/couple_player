@@ -3,7 +3,6 @@ import 'package:couple_player/auth/join_partner.dart';
 import 'package:couple_player/auth/sign_in.dart';
 import 'package:couple_player/screens/player_view.dart';
 import 'package:couple_player/utils/colors.dart';
-import 'package:easy_splash_screen/easy_splash_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -25,6 +24,9 @@ Future<void> main() async {
   runApp(const MyApp());
 }
 
+@override
+void initState() {}
+
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
@@ -38,19 +40,21 @@ class _MyAppState extends State<MyApp> {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: "Couple Player",
-      home: EasySplashScreen(
-        logo: Image.asset('assets/sign_up_cover.webp'),
-        title: const Text(
-          "Couple Player",
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        backgroundColor: Colors.white,
-        showLoader: true,
-        loadingText: const Text("Loading..."),
-        futureNavigator: beforeLoad(),
+      home: FutureBuilder(
+        future: beforeLoad(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.done) {
+            return snapshot.data ?? Container();
+          } else {
+            return const Scaffold(
+              body: Center(
+                child: CircularProgressIndicator(
+                  color: primaryColor,
+                ),
+              ),
+            );
+          }
+        },
       ),
     );
   }

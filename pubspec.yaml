@@ -31,20 +31,39 @@ dependencies:
   clipboard: ^0.1.3
   cloud_firestore: ^4.13.4
   cupertino_icons: ^1.0.2
-  easy_splash_screen: ^1.0.4
   firebase_auth: ^4.15.1
   firebase_core: ^2.24.1
   firebase_storage: ^11.5.4
   flutter:
     sdk: flutter
+  flutter_native_splash: ^2.3.8
   fluttertoast: ^8.2.4
   google_sign_in: ^6.1.6
   url_launcher: ^6.2.2
+  youtube_explode_dart: ^2.0.2
 
 dev_dependencies:
+  flutter_launcher_icons: ^0.13.1
   flutter_lints: ^2.0.0
   flutter_test:
     sdk: flutter
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/sign_up_cover.webp"
+
+flutter_native_splash:
+  color: "#ffffff"
+  image: assets/sign_up_cover.png
+  android: true
+  ios: true
+  web: false
+  android_gravity: fill
+  ios_content_mode: scaleAspectFill
+  color_dark: "#ffffff"
+  image_dark: assets/sign_up_cover.png
+  fullscreen: true
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
