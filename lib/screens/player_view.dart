@@ -1,11 +1,13 @@
 import 'dart:async';
 
-import 'package:audioplayers/audioplayers.dart';
+//import 'package:audioplayers/audioplayers.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:couple_player/screens/settings.dart';
 import 'package:couple_player/utils/colors.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:just_audio/just_audio.dart';
+import 'package:just_audio_background/just_audio_background.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart' as youtube;
 
 class PlayerView extends StatefulWidget {
@@ -22,7 +24,7 @@ class _PlayerViewState extends State<PlayerView> {
   bool isSearching = false;
   final Duration _debounceTime = const Duration(milliseconds: 500);
   Timer? _debounceTimer;
-  final AudioPlayer _audioPlayer = AudioPlayer();
+  late AudioPlayer _audioPlayer;
   String audioTitle = "";
   String userName = '';
   String partnerName = '';
@@ -31,7 +33,15 @@ class _PlayerViewState extends State<PlayerView> {
   void initState() {
     // TODO: implement initState
     super.initState();
+    _audioPlayer = AudioPlayer();
     _getUserNames();
+  }
+
+  @override
+  void dispose() {
+    // TODO: implement dispose
+    super.dispose();
+    _audioPlayer.dispose();
   }
 
   void _getUserNames() async {
@@ -233,7 +243,11 @@ class _PlayerViewState extends State<PlayerView> {
 
                     switch (playerState) {
                       case 'resume':
-                        _audioPlayer.resume();
+                        //_audioPlayer.resume();
+                        var position = playerData?['position'] ?? 0;
+                        _audioPlayer.seek(Duration(seconds: position));
+                        _audioPlayer.play();
+                        updatePlaybackState("play");
                         break;
                       case 'pause':
                         _audioPlayer.pause();
@@ -247,12 +261,42 @@ class _PlayerViewState extends State<PlayerView> {
                         var audioStreamUrl = playerData?['audioUrl'];
                         var position = playerData?['position'] ?? 0;
 
-                        if (audioStreamUrl != null) {
-                          _audioPlayer.stop();
-                          _audioPlayer.play(
-                            UrlSource(audioStreamUrl),
-                            position: Duration(seconds: position),
+                        // String? currentAudioStreamUrl =
+                        //     _audioPlayer.audioSource is UriAudioSource
+                        //         ? (_audioPlayer.audioSource as UriAudioSource)
+                        //             .uri
+                        //             .toString()
+                        //         : null;
+
+                        // if (currentAudioStreamUrl != audioStreamUrl &&
+                        //     _audioPlayer.playing) {
+                        //   _audioPlayer.stop();
+                        // }
+
+                        if (audioStreamUrl != null && !_audioPlayer.playing) {
+                          // Create an AudioSource using AudioPlayer
+                          var audioSource = ConcatenatingAudioSource(
+                            children: [
+                              AudioSource.uri(
+                                Uri.parse(audioStreamUrl),
+                                tag: MediaItem(
+                                  id: '', // Use a unique ID for each media item
+                                  album: "Couple Player",
+                                  title: playerData?['audioTitle'],
+                                  artUri: null,
+                                ),
+                              ),
+                            ],
                           );
+
+                          // Set the new audio source
+                          _audioPlayer.setAudioSource(audioSource);
+
+                          // Seek to the specified position
+                          _audioPlayer.seek(Duration(seconds: position));
+
+                          // Play the audio
+                          _audioPlayer.play();
                         }
                         break;
                       // Add more cases as needed
@@ -537,9 +581,13 @@ class _PlayerViewState extends State<PlayerView> {
         var playerDoc =
             FirebaseFirestore.instance.collection('players').doc(playerInfoId);
 
-        // Update the 'state' field directly in the playerDoc
+        // Get the current position before updating the state
+        var currentPosition = _audioPlayer.position;
+
+        // Update the 'state' and 'position' fields directly in the playerDoc
         await playerDoc.update({
           'state': state,
+          'position': currentPosition.inSeconds,
         });
       }
     }
