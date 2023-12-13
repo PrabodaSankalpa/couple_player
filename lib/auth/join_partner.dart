@@ -410,7 +410,12 @@ Future<void> connectWithPartner(String partnerKey) async {
   // Create a new document in 'players' collection
   DocumentReference<Map<String, dynamic>> playerDoc =
       await FirebaseFirestore.instance.collection('players').add({
-    'someField': 'someValue', // Add other fields as needed
+    'audioTitle': '',
+    'audioUrl': null,
+    'duration': 0,
+    'position': 0,
+    'state': null,
+    // Add other fields as needed
   });
 
   // Get the document ID of the newly created 'players' document
