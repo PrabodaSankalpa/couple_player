@@ -411,10 +411,11 @@ Future<void> connectWithPartner(String partnerKey) async {
   DocumentReference<Map<String, dynamic>> playerDoc =
       await FirebaseFirestore.instance.collection('players').add({
     'audioTitle': '',
-    'audioUrl': null,
+    'audioUrl': '',
     'duration': 0,
     'position': 0,
-    'state': null,
+    'state': '',
+    'isNew': true,
     // Add other fields as needed
   });
 

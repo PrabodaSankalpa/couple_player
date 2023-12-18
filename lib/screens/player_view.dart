@@ -1,11 +1,15 @@
 import 'dart:async';
+import 'dart:math';
 
 //import 'package:audioplayers/audioplayers.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:confetti/confetti.dart';
 import 'package:couple_player/screens/settings.dart';
+import 'package:couple_player/utils/ad_mob_service.dart';
 import 'package:couple_player/utils/colors.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart' as youtube;
@@ -19,33 +23,46 @@ class PlayerView extends StatefulWidget {
 
 class _PlayerViewState extends State<PlayerView> {
   TextEditingController _searchController = TextEditingController();
+  final confettiController = ConfettiController();
 
   List<youtube.Video> ytResult = [];
   bool isSearching = false;
+  bool isConfettiPlaying = false;
   final Duration _debounceTime = const Duration(milliseconds: 500);
   Timer? _debounceTimer;
   late AudioPlayer _audioPlayer;
   String audioTitle = "";
   String userName = '';
   String partnerName = '';
+  InterstitialAd? _interstitialAd;
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     _audioPlayer = AudioPlayer();
     _getUserNames();
+    _createInterstitialAd();
   }
 
   @override
   void dispose() {
-    // TODO: implement dispose
     super.dispose();
     _audioPlayer.dispose();
+    confettiController.dispose();
   }
 
   void _getUserNames() async {
     await getUserNames();
+  }
+
+  void _createInterstitialAd() {
+    InterstitialAd.load(
+      adUnitId: AdMobService.interstitialAdUnitId!,
+      request: const AdRequest(),
+      adLoadCallback: InterstitialAdLoadCallback(
+          onAdLoaded: (ad) => _interstitialAd = ad,
+          onAdFailedToLoad: (LoadAdError error) => _interstitialAd = null),
+    );
   }
 
   @override
@@ -53,9 +70,31 @@ class _PlayerViewState extends State<PlayerView> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: primaryColor,
-        title: const Text(
-          "Couple Player",
-          style: TextStyle(color: Colors.white),
+        title: GestureDetector(
+          onLongPress: () {
+            showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      confettiController.stop();
+                      Navigator.of(context).pop();
+                    },
+                    child: const Text("Thanks..."),
+                  )
+                ],
+                title: const Text('Happy Birthday Suduu...❤😘'),
+                contentPadding: const EdgeInsets.all(20.0),
+                content: const Text("S💕S"),
+              ),
+            );
+            confettiController.play();
+          },
+          child: const Text(
+            "Couple Player",
+            style: TextStyle(color: Colors.white),
+          ),
         ),
         actions: [
           IconButton(
@@ -67,13 +106,30 @@ class _PlayerViewState extends State<PlayerView> {
                 ),
               );
             },
-            icon: const Icon(Icons.settings),
+            icon: const Icon(
+              Icons.settings,
+              color: secondryColor,
+            ),
           ),
         ],
       ),
       body: SafeArea(
         child: Column(
           children: [
+            Align(
+              alignment: Alignment.topCenter,
+              child: ConfettiWidget(
+                confettiController: confettiController,
+                shouldLoop: true,
+                blastDirection: pi / 2,
+                gravity: 0.2,
+                numberOfParticles: 10,
+                minBlastForce: 1,
+                maxBlastForce: 50,
+                emissionFrequency: 0.10,
+
+              ),
+            ),
             Container(
               color: secondryColor,
               child: Padding(
@@ -220,7 +276,7 @@ class _PlayerViewState extends State<PlayerView> {
 
                 var playerInfoId = snapshot.data!['playerInfoId'];
 
-                if (playerInfoId == null) {
+                if (playerInfoId == null || playerInfoId == '') {
                   return const Text('Player info not available');
                 }
 
@@ -255,11 +311,13 @@ class _PlayerViewState extends State<PlayerView> {
                       case 'stop':
                         _audioPlayer.stop();
                         clearAudioTitle();
+                        _showInterstitialAd();
                         break;
 
                       case 'play':
                         var audioStreamUrl = playerData?['audioUrl'];
                         var position = playerData?['position'] ?? 0;
+                        var isNew = playerData?['isNew'];
 
                         // String? currentAudioStreamUrl =
                         //     _audioPlayer.audioSource is UriAudioSource
@@ -273,7 +331,8 @@ class _PlayerViewState extends State<PlayerView> {
                         //   _audioPlayer.stop();
                         // }
 
-                        if (audioStreamUrl != null && !_audioPlayer.playing) {
+                        if ((audioStreamUrl != null || audioStreamUrl != '') &&
+                            isNew == true) {
                           // Create an AudioSource using AudioPlayer
                           var audioSource = ConcatenatingAudioSource(
                             children: [
@@ -294,6 +353,9 @@ class _PlayerViewState extends State<PlayerView> {
 
                           // Seek to the specified position
                           _audioPlayer.seek(Duration(seconds: position));
+
+                          //setIsNew
+                          setIsNew();
 
                           // Play the audio
                           _audioPlayer.play();
@@ -350,7 +412,8 @@ class _PlayerViewState extends State<PlayerView> {
                                     var playerInfoId =
                                         snapshot.data!['playerInfoId'];
 
-                                    if (playerInfoId == null) {
+                                    if (playerInfoId == null ||
+                                        playerInfoId == '') {
                                       return const Text(
                                           'Player info not available');
                                     }
@@ -542,7 +605,7 @@ class _PlayerViewState extends State<PlayerView> {
         var userSnapshot = await userDoc.get();
         var playerInfoId = userSnapshot['playerInfoId'];
 
-        if (playerInfoId != null) {
+        if (playerInfoId != null || playerInfoId != '') {
           var playerDoc = FirebaseFirestore.instance
               .collection('players')
               .doc(playerInfoId);
@@ -555,6 +618,7 @@ class _PlayerViewState extends State<PlayerView> {
               'duration': duration, // Store the duration in the document
               'position': 0, // Initial position is set to 0
               'state': 'play', // Change this based on your logic
+              'isNew': true,
             },
           );
         }
@@ -577,7 +641,7 @@ class _PlayerViewState extends State<PlayerView> {
       var userSnapshot = await userDoc.get();
       var playerInfoId = userSnapshot['playerInfoId'];
 
-      if (playerInfoId != null) {
+      if (playerInfoId != null || playerInfoId != '') {
         var playerDoc =
             FirebaseFirestore.instance.collection('players').doc(playerInfoId);
 
@@ -601,17 +665,38 @@ class _PlayerViewState extends State<PlayerView> {
       var userSnapshot = await userDoc.get();
       var playerInfoId = userSnapshot['playerInfoId'];
 
-      if (playerInfoId != null) {
+      if (playerInfoId != null || playerInfoId != '') {
         var playerDoc =
             FirebaseFirestore.instance.collection('players').doc(playerInfoId);
 
         // Update the 'audioTitle' field directly in the playerDoc
         await playerDoc.update({
           'audioTitle': "",
-          'audioUrl': null,
+          'audioUrl': '',
           'duration': 0,
           'position': 0,
-          'state': null,
+          'state': '',
+          'isNew': true,
+        });
+      }
+    }
+  }
+
+  Future<void> setIsNew() async {
+    var currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser != null) {
+      var userDoc =
+          FirebaseFirestore.instance.collection('users').doc(currentUser.uid);
+      var userSnapshot = await userDoc.get();
+      var playerInfoId = userSnapshot['playerInfoId'];
+
+      if (playerInfoId != null || playerInfoId != '') {
+        var playerDoc =
+            FirebaseFirestore.instance.collection('players').doc(playerInfoId);
+
+        // Update the 'audioTitle' field directly in the playerDoc
+        await playerDoc.update({
+          'isNew': false,
         });
       }
     }
@@ -631,7 +716,7 @@ class _PlayerViewState extends State<PlayerView> {
           // userName = userDoc['displayName'];
           var partnerInfoId = userDoc['partnerId'];
 
-          if (partnerInfoId != null) {
+          if (partnerInfoId != null || partnerInfoId != '') {
             var partnerDoc = await FirebaseFirestore.instance
                 .collection('users')
                 .doc(partnerInfoId)
@@ -650,6 +735,23 @@ class _PlayerViewState extends State<PlayerView> {
     } catch (e) {
       print('Error retrieving user names: $e');
       // Handle the error as needed
+    }
+  }
+
+  void _showInterstitialAd() {
+    if (_interstitialAd != null) {
+      _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
+        onAdDismissedFullScreenContent: (ad) {
+          ad.dispose();
+          _createInterstitialAd();
+        },
+        onAdFailedToShowFullScreenContent: (ad, error) {
+          ad.dispose();
+          _createInterstitialAd();
+        },
+      );
+      _interstitialAd!.show();
+      _interstitialAd = null;
     }
   }
 }
